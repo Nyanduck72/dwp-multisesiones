@@ -15,7 +15,6 @@ export async function POST(request: Request) {
     },
   });
 
-  console.log(await prisma.user.findMany());
   if (user && (await bcrypt.compare(body.password, user.password))) {
     // eslint-disable-next-line
     const { password, ...userWithoutPass } = user;
