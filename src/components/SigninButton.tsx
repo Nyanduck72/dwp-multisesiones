@@ -9,15 +9,21 @@ const SigninButton = () => {
   if (session && session.user) {
     return (
       <div className="flex gap-4 ml-auto">
-        <p className="text-sky-600">{session.user.email}</p>
-        <button onClick={() => signOut()} className="text-red-600">
+        <p className="text-sky-600 py-2">{session.user.email}</p>
+        <button
+          onClick={() => signOut()}
+          className="cursor-pointer border-1 shadow-lg px-4 py-2 w-26 rounded-lg text-red-600 ml-auto hover:text-white hover:bg-red-600 hover:border-red-600 transition-all"
+        >
           Sign Out
         </button>
       </div>
     );
   }
   return (
-    <button onClick={() => signIn()} className="text-green-600 ml-auto">
+    <button
+      onClick={() => signIn()}
+      className="cursor-pointer border-1 shadow-lg px-4 py-2 w-24 rounded-lg text-green-600 ml-auto hover:text-white hover:bg-green-600 hover:border-green-600 transition-all"
+    >
       Sign In
     </button>
   );

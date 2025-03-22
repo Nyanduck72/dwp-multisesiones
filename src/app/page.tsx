@@ -1,103 +1,111 @@
-import Image from "next/image";
+'use client';
+
+import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useRef, useState } from 'react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [showWarning, setShowWarning] = useState(false);
+  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+  const timeLeftRef = useRef<number>(300); // 5 minutes in seconds
+  const [displayTime, setDisplayTime] = useState<string>('5:00');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+  // Function to handle user activity
+  const resetInactivityTimer = () => {
+    // Clear the existing timeout
+    if (timeoutIdRef.current) {
+      clearTimeout(timeoutIdRef.current);
+    }
+
+    // Reset the time left to 5 minutes
+    timeLeftRef.current = 300;
+    setDisplayTime('5:00');
+    setShowWarning(false);
+
+    // Set a new timeout for 5 minutes (300,000 milliseconds)
+    timeoutIdRef.current = setTimeout(() => {
+      signOut({ redirect: false }).then(() => {
+        router.push('/register'); // Redirect to the register page after sign-out
+      });
+    }, 300000); // 5 minutes in milliseconds
+  };
+
+  // Effect to update the countdown every second
+  useEffect(() => {
+    if (session) {
+      const countdownInterval = setInterval(() => {
+        timeLeftRef.current -= 1;
+
+        // Update the display time every second
+        const minutes = Math.floor(timeLeftRef.current / 60);
+        const seconds = timeLeftRef.current % 60;
+        setDisplayTime(`${minutes}:${seconds < 10 ? '0' : ''}${seconds}`);
+
+        // Show a warning when 1 minute is left
+        if (timeLeftRef.current === 60) {
+          setShowWarning(true);
+        }
+      }, 1000);
+
+      // Cleanup interval on component unmount or session change
+      return () => clearInterval(countdownInterval);
+    }
+  }, [session]);
+
+  // Effect to set up event listeners for user activity
+  useEffect(() => {
+    if (session) {
+      // Add event listeners for user activity
+      window.addEventListener('mousemove', resetInactivityTimer);
+      window.addEventListener('keydown', resetInactivityTimer);
+      window.addEventListener('click', resetInactivityTimer);
+
+      // Initialize the inactivity timer
+      resetInactivityTimer();
+
+      // Cleanup event listeners and timeout on component unmount
+      return () => {
+        window.removeEventListener('mousemove', resetInactivityTimer);
+        window.removeEventListener('keydown', resetInactivityTimer);
+        window.removeEventListener('click', resetInactivityTimer);
+        if (timeoutIdRef.current) {
+          clearTimeout(timeoutIdRef.current);
+        }
+      };
+    }
+  }, [session]);
+
+  // Redirect to /register if the user is not signed in
+  useEffect(() => {
+    if (!session) {
+      router.push('/register');
+    }
+  }, [session, router]);
+
+  if (session && session.user) {
+    return (
+      <div className="w-screen h-screen bg-radial-gradient from-neutral-400 to-neutral-500 flex items-center justify-center flex-col">
+        <h1 className="text-6xl font-bold">Logged In</h1>
+        <p className="mt-4 text-lg text-gray-300">
+          Time left before sign-out: {displayTime}
+        </p>
+        {showWarning && (
+          <div className="mt-6 p-4 bg-yellow-500 text-white rounded-lg">
+            <p>You will be signed out in 1 minute due to inactivity.</p>
+            <button
+              onClick={resetInactivityTimer}
+              className="mt-2 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+            >
+              Stay Signed In
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Return null or a loading spinner while redirecting
+  return null;
 }
