@@ -8,15 +8,16 @@ datasource db {
 }
 
 model User {
-  id            Int             @id @default(autoincrement())
-  email         String          @unique
-  name          String?
-  password      String
-  QuestionsUser QuestionsUser[]
+  id             String           @id @default(uuid())
+  email          String           @unique
+  password       String
+  resetToken       String?           @unique
+  resetExpires     DateTime?
+  QuestionsUser  QuestionsUser[]  
 }
 
 model SecurityQuestions {
-  id_security_question Int             @id @default(autoincrement())
+  id_security_question Int              @id @default(autoincrement())
   security_question    String
   QuestionsUser        QuestionsUser[]
 }
@@ -24,8 +25,8 @@ model SecurityQuestions {
 model QuestionsUser {
   id_security_user     Int               @id @default(autoincrement())
   id_security_question Int
-  id_user              Int
+  id_user              String
   answer               String
-  User                 User              @relation(fields: [id_user], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  SecurityQuestions    SecurityQuestions @relation(fields: [id_security_question], references: [id_security_question], onDelete: NoAction, onUpdate: NoAction)
+  User                 User              @relation(fields: [id_user], references: [id])
+  SecurityQuestions    SecurityQuestions @relation(fields: [id_security_question], references: [id_security_question])
 }
