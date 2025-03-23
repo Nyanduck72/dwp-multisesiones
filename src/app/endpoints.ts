@@ -18,6 +18,17 @@ export const register = async (formData: FormData) => {
   return response.json();
 };
 
+export const getSecurityQuestion = async (idSecurityQuestion: number) => {
+  const response = await fetch(`${url}/api/securityQuestions/${idSecurityQuestion}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+
+  return response.json()
+}
+
 export const getSecurityQuestiosn = async () => {
   const response = await fetch(`${url}/api/securityQuestions`, {
     method: "GET",
@@ -36,7 +47,7 @@ export const setSecurityQuestion = async (formData: FormQuestionUser) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      idSecurityQuestion: 1,
+      idSecurityQuestion: formData.idSecurityQuestion,
       userEmail: formData.sessionEmail,
       questionAnswer: formData.questionAnswer,
     }),

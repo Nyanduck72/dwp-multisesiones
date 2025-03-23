@@ -44,12 +44,12 @@ export default function SecurityQuestions(props: {idSecurityQuestion: number}) {
       <div className="">
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-            <label
+            {/* <label
                 htmlFor="username"
                 className="block text-sm font-medium text-gray-300"
               >
               Respuesta
-            </label>
+            </label> */}
             <input
                 type="text"
                 id="question"
@@ -65,7 +65,7 @@ export default function SecurityQuestions(props: {idSecurityQuestion: number}) {
             type="submit"
             className="cursor-pointer w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-            Configurar pregunta de seguridad
+            Save Answer
           </button>
           </div>
         </form>

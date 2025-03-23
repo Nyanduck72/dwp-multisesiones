@@ -8,8 +8,14 @@ interface RequestBody {
     userEmail: string;
   }
 
+//   export async function GET({params}: {params: Promise<{slug: number}>}){
+//     const {slug} = await params
+//     const securityQuestions: SecurityQuestions[] = await prisma.securityQuestions.findMany({where: {id_security_question: slug}})
+//     return new Response(JSON.stringify(securityQuestions))
+// }
+
 export async function GET(){
-    const securityQuestions: SecurityQuestions[] = await prisma.securityQuestions.findMany({take: 1})
+    const securityQuestions: SecurityQuestions[] = await prisma.securityQuestions.findMany()
     return new Response(JSON.stringify(securityQuestions))
 }
 
