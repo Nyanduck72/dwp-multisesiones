@@ -1,95 +1,201 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import jwt from 'jsonwebtoken';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
-export default function ResetPasswordPage({ params }: { params: { token: string } }) {
+interface Question {
+  id: number;
+  question: string;
+}
+
+export default function ResetPasswordPage() {
+  const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<string[]>([]);
-  const [questions, setQuestions] = useState<string[]>([]);
   const [newPassword, setNewPassword] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  
+  const params = useParams();
+  const token = Array.isArray(params.token) ? params.token[0] : params.token;
   const router = useRouter();
 
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const response = await fetch(`/api/auth/verify-token?token=${params.token}`);
+        if (!token) {
+          setError('Token inválido');
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch(`/api/auth/verify-token?token=${token}`);
         const data = await response.json();
         
-        if (data.valid && data.questions) {
+        if (response.ok && data.valid) {
           setQuestions(data.questions);
-          setLoading(false);
+          setAnswers(new Array(data.questions.length).fill(''));
         } else {
-          router.push('/auth/login?error=invalid_token');
+          setError('El enlace es inválido o ha expirado');
         }
-      } catch (error) {
-        router.push('/auth/login?error=token_verification_failed');
+      } catch (err) {
+        setError('Error de conexión. Verifica tu internet.');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     verifyToken();
-  }, [params.token, router]);
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const response = await fetch('/api/auth/reset-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        token: params.token,
-        answers,
-        newPassword
-      }),
-    });
+    if (newPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      return;
+    }
+    
+    if (answers.some(answer => !answer.trim())) {
+      setError('Debes responder todas las preguntas');
+      return;
+    }
+    
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          token,
+          answers,
+          newPassword
+        }),
+      });
 
-    if (response.ok) {
-      router.push('/auth/login?reset=success');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setMessage('Contraseña actualizada correctamente');
+        setTimeout(() => {
+          router.push('/register');
+        }, 2000);
+      } else {
+        setError(data.error || 'Ocurrió un error. Intenta de nuevo.');
+      }
+    } catch (err) {
+      setError('Error de conexión. Verifica tu internet.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="text-center p-8">
-        <p>Verificando seguridad...</p>
+      <div className="max-w-md mx-auto mt-10 p-6 text-center">
+        <p className="text-gray-600">Verificando enlace...</p>
+      </div>
+    );
+  }
+
+  if (error && !questions.length) {
+    return (
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+        <div className="p-3 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => router.push('/forgot-password')}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Solicitar nuevo enlace
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Verificación de Seguridad</h1>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold mb-6 text-center text-black">Restablecer Contraseña</h1>
+      
+      {message && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded">
+          {message}
+        </div>
+      )}
+      
+      {error && (
+        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-6">
-        {questions.map((question, index) => (
-          <div key={index} className="space-y-2">
-            <label className="block font-medium">{question}</label>
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-gray-800">Preguntas de Seguridad</h2>
+          {questions.map((q, index) => (
+            <div key={q.id} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {q.question}
+              </label>
+              <input
+                type="text"
+                value={answers[index]}
+                onChange={(e) => {
+                  const newAnswers = [...answers];
+                  newAnswers[index] = e.target.value;
+                  setAnswers(newAnswers);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 text-black rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+          ))}
+        </div>
+        
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-gray-800">Nueva Contraseña</h2>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
             <input
-              type="text"
-              className="w-full p-2 border rounded"
-              onChange={(e) => {
-                const newAnswers = [...answers];
-                newAnswers[index] = e.target.value;
-                setAnswers(newAnswers);
-              }}
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+              minLength={8}
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Confirmar Contraseña
+            </label>
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-3 py-2 border text-black border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
-        ))}
-        <div className="space-y-2">
-          <label className="block font-medium">Nueva Contraseña</label>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
-            required
-          />
         </div>
+        
         <button
           type="submit"
-          className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700"
+          disabled={isSubmitting}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Restablecer Contraseña
+          {isSubmitting ? 'Procesando...' : 'Restablecer Contraseña'}
         </button>
       </form>
     </div>

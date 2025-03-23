@@ -1,50 +1,73 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { signJwtAccessToken } from '@/lib/jwt';
 import { sendResetEmail } from '@/lib/mailer';
 
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
     
-    // 1. Buscar usuario
+    // Buscar usuario y verificar preguntas de seguridad
     const user = await prisma.user.findUnique({
       where: { email },
-      include: { QuestionsUser: { include: { SecurityQuestions: true } } }
+      include: { 
+        QuestionsUser: { 
+          include: { 
+            SecurityQuestions: true 
+          } 
+        } 
+      }
     });
 
-    if (!user || !user.QuestionsUser.length) {
+    if (!user) {
       return NextResponse.json(
-        { error: 'Usuario no encontrado o sin preguntas de seguridad' },
+        { error: 'Usuario no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    if (!user.QuestionsUser || user.QuestionsUser.length === 0) {
+      return NextResponse.json(
+        { error: 'Usuario sin preguntas de seguridad configuradas' },
         { status: 400 }
       );
     }
 
-    // 2. Generar token JWT
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        questions: user.QuestionsUser.map(q => q.SecurityQuestions.id_security_question)
-      },
-      process.env.JWT_SECRET!,
-      { expiresIn: '15m' }
-    );
+    // Generar token JWT
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+      questions: user.QuestionsUser.map(q => ({
+        id: q.SecurityQuestions.id_security_question,
+        question: q.SecurityQuestions.security_question
+      }))
+    };
 
-    // 3. Actualizar usuario en DB
+    const token = signJwtAccessToken(tokenPayload, { expiresIn: '15m' });
+
+    // Actualizar usuario con token
     await prisma.user.update({
       where: { id: user.id },
       data: {
         resetToken: token,
-        resetExpires: new Date(Date.now() + 15 * 60 * 1000)
+        resetExpires: new Date(Date.now() + 15 * 60 * 1000) // 15 minutos
       }
     });
 
-    // 4. Enviar correo
-    await sendResetEmail(user.email, token);
+    // Enviar correo
+    const emailSent = await sendResetEmail(user.email, token);
+
+      if (!emailSent) {
+        console.error("Fallo envío de email - Detalles:", {
+          to: user.email,
+          error: emailSent
+        });
+      }
+
 
     return NextResponse.json({
       success: true,
-      message: 'Correo enviado correctamente'
+      message: 'Se ha enviado un correo con instrucciones'
     });
 
   } catch (error) {

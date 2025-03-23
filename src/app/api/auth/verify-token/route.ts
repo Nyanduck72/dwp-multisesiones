@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import jwt from 'jsonwebtoken';
+import { verifyJwt } from '@/lib/jwt';
 
 export async function GET(req: Request) {
   try {
@@ -11,11 +11,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ valid: false }, { status: 400 });
     }
 
-    // Verificar token JWT
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      userId: number;
-      questions: number[];
-    };
+    // Verificar token
+    const decoded = verifyJwt(token);
+    
+    if (!decoded || !decoded.userId) {
+      return NextResponse.json({ valid: false }, { status: 401 });
+    }
 
     // Verificar en base de datos
     const user = await prisma.user.findUnique({
@@ -26,7 +27,9 @@ export async function GET(req: Request) {
       },
       include: {
         QuestionsUser: {
-          include: { SecurityQuestions: true }
+          include: {
+            SecurityQuestions: true
+          }
         }
       }
     });
@@ -35,13 +38,19 @@ export async function GET(req: Request) {
       return NextResponse.json({ valid: false }, { status: 401 });
     }
 
+    // Extraer preguntas de seguridad
+    const questions = user.QuestionsUser.map(q => ({
+      id: q.SecurityQuestions.id_security_question,
+      question: q.SecurityQuestions.security_question
+    }));
+
     return NextResponse.json({
       valid: true,
-      questions: user.QuestionsUser.map(q => q.SecurityQuestions.security_question)
+      questions
     });
 
   } catch (error) {
-    console.error('Error verifying token:', error);
+    console.error('Error verificando token:', error);
     return NextResponse.json({ valid: false }, { status: 500 });
   }
 }
