@@ -8,16 +8,24 @@ datasource db {
 }
 
 model User {
-  id             String           @id @default(uuid())
-  email          String           @unique
-  password       String
-  resetToken       String?           @unique
-  resetExpires     DateTime?
-  QuestionsUser  QuestionsUser[]  
+  id            String          @id @default(uuid())
+  email         String          @unique
+  password      String
+  resetToken    String?         @unique
+  resetExpires  DateTime?
+  QuestionsUser QuestionsUser[]
+  role          Int             @default(1)
+  Role          Role            @relation(fields: [role], references: [id])
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String
+  User User[]
 }
 
 model SecurityQuestions {
-  id_security_question Int              @id @default(autoincrement())
+  id_security_question Int             @id @default(autoincrement())
   security_question    String
   QuestionsUser        QuestionsUser[]
 }

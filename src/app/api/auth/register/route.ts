@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "success" });
   } catch (e) {
-    return NextResponse.json({ message: "Something unexpected ocurred"})
+    return NextResponse.json({ message: "Something unexpected ocurred" });
     console.log({ e });
   }
 
