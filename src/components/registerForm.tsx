@@ -1,6 +1,7 @@
 "use client";
 import { useState, ChangeEvent, FormEvent } from "react";
 import { register } from "@/app/endpoints";
+import { useRouter } from "next/navigation";
 
 // Define the type for the form data
 export type FormData = {
@@ -10,6 +11,9 @@ export type FormData = {
 };
 
 export default function RegisterForm() {
+
+  const router = useRouter();
+
   // Initialize state with the FormData type
   const [formData, setFormData] = useState<FormData>({
     username: "",
