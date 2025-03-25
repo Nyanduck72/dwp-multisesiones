@@ -80,7 +80,7 @@ export default function Home() {
   // Redirect to /register if the user is not signed in
   useEffect(() => {
     if (!session) {
-      router.push('/register');
+      router.push('/public');
     }
   }, [session, router]);
 
