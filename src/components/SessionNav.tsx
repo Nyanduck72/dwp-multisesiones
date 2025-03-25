@@ -9,7 +9,7 @@ export default function SessionNav(){
     if(session && session.user){
         return (
             <Link 
-                className="cursor-pointer px-6 py-2 w-54 rounded-lg text-black hover:text-blue-600 transition-colors" 
+                className="cursor-pointer px-6 py-2 w-54 rounded-lg text-black transition-colors" 
                 href={"/security-question"}
             >
                 Set Security Questions
@@ -19,7 +19,7 @@ export default function SessionNav(){
     else{
         return(
             <Link 
-                className="cursor-pointer px-6 py-2 w-54 rounded-lg text-red-600 hover:text-red-800 transition-colors"
+                className="cursor-pointer w-54 rounded-lg text-black transition-colors"
                 href={"/forgot-password"}
             >
                 Forgot Password?
