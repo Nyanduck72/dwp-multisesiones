@@ -13,8 +13,8 @@ model User {
   password      String
   resetToken    String?         @unique
   resetExpires  DateTime?
-  QuestionsUser QuestionsUser[]
   role          Int             @default(1)
+  QuestionsUser QuestionsUser[]
   Role          Role            @relation(fields: [role], references: [id])
 }
 
@@ -35,6 +35,6 @@ model QuestionsUser {
   id_security_question Int
   id_user              String
   answer               String
-  User                 User              @relation(fields: [id_user], references: [id])
   SecurityQuestions    SecurityQuestions @relation(fields: [id_security_question], references: [id_security_question])
+  User                 User              @relation(fields: [id_user], references: [id])
 }

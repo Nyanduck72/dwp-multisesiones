@@ -3,6 +3,17 @@ import { FormQuestionUser } from "@/components/SecurityQuestions";
 
 const url: string = "http://localhost:3000";
 
+export const getRoleByUserEmail = async (userEmail: string) =>{
+  const response = await fetch(`${url}/api/roles?userEmail=${userEmail}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+
+  return response.json()
+}
+
 export const register = async (formData: FormData) => {
   const response = await fetch(`${url}/api/auth/register`, {
     method: "POST",
@@ -31,6 +42,17 @@ export const getSecurityQuestion = async (idSecurityQuestion: number) => {
 
 export const getSecurityQuestiosn = async () => {
   const response = await fetch(`${url}/api/securityQuestions`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    }
+  })
+
+  return response.json()
+}
+
+export const getUsers = async () => {
+  const response = await fetch(`${url}/api/users`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
